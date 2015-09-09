@@ -1,0 +1,10 @@
+[
+    {
+        "name": "ITC Gardenia",
+        "attribute": "gym",
+        "cover_image": "cover_image",
+        "images": ["url"],
+        "reviews": ["reviews"],
+        "address": [""]
+    }
+]
