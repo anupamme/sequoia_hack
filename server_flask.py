@@ -20,7 +20,7 @@ SHELVE_DB = 'shelve.db'
 app = Flask(__name__)
 
 #import text_parser as text_p
-attribute_seed_file = '/Volumes/anupam work/review-app-local/data/tree-data/attribute-tree-4.json'
+attribute_seed_file = '/Volumes/anupam work/review-app-local/data/tree-data/percolate_4.json'
 hotel_review_id_file = '/Volumes/anupam work/code/showup-code/elastic-search/experiment-reviews/data/tmp/hotel_id_meta.json'
 
 hotel_names_arr = [
@@ -362,39 +362,39 @@ hotel_names_arr = [
     "Grand Nikko Bali"
 ]
 
-def load_everything():
-    text_parser_loaded = getattr(g, 'text_parser_loaded', None)
-#    if 'text_parser_loaded' in db:
-#        text_parser_loaded = db['text_parser_loaded']
-#    else:
-#        text_parser_loaded = None
-    print 'text_parser_loaded: ' + str(text_parser_loaded)
-    
-    attr_seed = getattr(g, 'attribute_seed', None)
-    #print 'seed: ' + str(attr_seed)
-    
-    if attr_seed == None:
-        attr_seed = json.loads(open(attribute_seed_file, 'r').read())
-        setattr(g, 'attribute_seed', attr_seed)
-    
-    #print 'text_parser_loaded: ' + str(text_parser_loaded)
-    if text_parser_loaded == None:
-        text_p.load_model_files()
-        print 'setting text_parser_loaded: ' + str(True)
-        setattr(g, 'text_parser_loaded', True)
-        #db['text_parser_loaded'] = True
-        #session['text_parser_loaded'] = True
-        #text_parser_loaded = db['text_parser_loaded']
-        val = getattr(g, 'text_parser_loaded')
-        print 'text_parser_loaded immediate: ' + str(val)
-        
-    return attr_seed
-        
-def load_hotel_review_data():
-    match_data = getattr(g, 'hotel_review_id', None)
-    if match_data == None:
-        match_data = json.loads(open(hotel_review_id_file, 'r').read())
-    return match_data
+#def load_everything():
+#    text_parser_loaded = getattr(g, 'text_parser_loaded', None)
+##    if 'text_parser_loaded' in db:
+##        text_parser_loaded = db['text_parser_loaded']
+##    else:
+##        text_parser_loaded = None
+#    print 'text_parser_loaded: ' + str(text_parser_loaded)
+#    
+#    attr_seed = getattr(g, 'attribute_seed', None)
+#    #print 'seed: ' + str(attr_seed)
+#    
+#    if attr_seed == None:
+#        attr_seed = json.loads(open(attribute_seed_file, 'r').read())
+#        setattr(g, 'attribute_seed', attr_seed)
+#    
+#    #print 'text_parser_loaded: ' + str(text_parser_loaded)
+#    if text_parser_loaded == None:
+#        text_p.load_model_files()
+#        print 'setting text_parser_loaded: ' + str(True)
+#        setattr(g, 'text_parser_loaded', True)
+#        #db['text_parser_loaded'] = True
+#        #session['text_parser_loaded'] = True
+#        #text_parser_loaded = db['text_parser_loaded']
+#        val = getattr(g, 'text_parser_loaded')
+#        print 'text_parser_loaded immediate: ' + str(val)
+#        
+#    return attr_seed
+#        
+#def load_hotel_review_data():
+#    match_data = getattr(g, 'hotel_review_id', None)
+#    if match_data == None:
+#        match_data = json.loads(open(hotel_review_id_file, 'r').read())
+#    return match_data
 
 a = reqparse.RequestParser()
 a.add_argument('search_str', type=str)
@@ -442,22 +442,30 @@ class HelloHandler(restful.Resource):
     6. returning the json.
     
     '''
-    
-    
+    attr_seed = None
+    match_data = None
+    def __init__(self):
+        print 'init init'
+        self.attr_seed = json.loads(open(attribute_seed_file, 'r').read())
+        self.match_data = json.loads(open(hotel_review_id_file, 'r').read())
+        text_p.load_model_files()
+        print 'end init'
     
     def get(self):
         args = a.parse_args()
         search_criteria = args.get('search_str')
         print 'search_criteria: ' + search_criteria
         print 'in get'
-        attr_seed = load_everything()
+        #attr_seed = load_everything()
+        assert(self.attr_seed != None)
+        assert(text_p.is_model_loaded())
         print 'before match_data'
-        match_data = load_hotel_review_data()
+        #match_data = load_hotel_review_data()
         print 'after match_data'
-        path = text_p.find_attribute_2(attr_seed, search_criteria)
+        path = text_p.find_attribute_2(self.attr_seed, search_criteria)
         
         print ("path: " + str(path))
-        attr = path[len(path) - 1]
+        attr = path[len(path) - 1][0]
         #attr = "pool"
         
         response_images = client.search(
@@ -503,7 +511,8 @@ class HelloHandler(restful.Resource):
             }
         )
         
-        results_reviews = convert_to_hotel_review_id_resuts(response_reviews, match_data, attr)
+        assert(self.match_data != None)
+        results_reviews = convert_to_hotel_review_id_resuts(response_reviews, self.match_data, attr)
         
         #print 'reviews: ' + str(results_reviews)
         
